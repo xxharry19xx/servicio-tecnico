@@ -12,10 +12,12 @@ nixPkgs = [
   "composer_2"
 ]
 
+# Desactivamos la fase de Node completamente
+[phases.install]
+cmds = ["composer install --no-dev --optimize-autoloader"]
+
 [phases.build]
-cmds = [
-  "composer install --no-dev --optimize-autoloader"
-]
+cmds = []
 
 [start]
 cmd = "php artisan config:cache && php artisan route:cache && php artisan serve --host=0.0.0.0 --port=$PORT"
