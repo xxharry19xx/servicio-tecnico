@@ -1,6 +1,6 @@
 FROM php:8.2-cli
 
-# Instalamos librerías del sistema incluyendo oniguruma para mbstring
+# Instalamos Node.js y dependencias del sistema
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     libgd-dev \
@@ -9,6 +9,9 @@ RUN apt-get update && apt-get install -y \
     libcurl4-openssl-dev \
     libonig-dev \
     unzip \
+    curl \
+    && curl -fsSL https://deb.nodesource.com/setup_20.x | bash - \
+    && apt-get install -y nodejs \
     && docker-php-ext-install pdo pgsql pdo_pgsql mbstring xml curl gd zip bcmath \
     && apt-get clean
 
@@ -21,6 +24,9 @@ COPY . .
 
 # Instalamos dependencias PHP
 RUN composer install --no-dev --optimize-autoloader
+
+# Instalamos dependencias Node y compilamos assets
+RUN npm ci && npm run build && rm -rf node_modules
 
 # Exponemos el puerto
 EXPOSE 8080
