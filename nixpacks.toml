@@ -9,16 +9,12 @@ nixPkgs = [
   "php82Extensions.zip",
   "php82Extensions.intl",
   "php82Extensions.bcmath",
-  "composer_2",
-  "nodejs_20",
-  "nodePackages.npm"
+  "composer_2"
 ]
 
 [phases.build]
 cmds = [
-  "composer install --no-dev --optimize-autoloader",
-  "npm install",
-  "npm run build"
+  "composer install --no-dev --optimize-autoloader"
 ]
 
 [start]
