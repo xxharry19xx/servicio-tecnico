@@ -1,12 +1,13 @@
 FROM php:8.2-cli
 
-# Instalamos extensiones necesarias
+# Instalamos librerías del sistema incluyendo oniguruma para mbstring
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     libgd-dev \
     libzip-dev \
     libxml2-dev \
     libcurl4-openssl-dev \
+    libonig-dev \
     unzip \
     && docker-php-ext-install pdo pgsql pdo_pgsql mbstring xml curl gd zip bcmath \
     && apt-get clean
