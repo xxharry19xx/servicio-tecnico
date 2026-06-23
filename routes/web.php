@@ -8,6 +8,7 @@ use App\Http\Controllers\RepuestoController;
 use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\VentaController;
+use App\Http\Controllers\TecnicoController;
 
 // Ruta raíz redirige al dashboard
 Route::get('/', fn() => redirect()->route('dashboard'));
@@ -53,6 +54,12 @@ Route::middleware(['auth'])->group(function () {
     // Módulo de inventario
     Route::resource('repuestos', RepuestoController::class)
         ->parameters(['repuestos' => 'repuesto']);
+
+    // Módulo de técnicos
+    Route::resource('tecnicos', TecnicoController::class)
+        ->parameters(['tecnicos' => 'tecnico']);
+    Route::patch('/tecnicos/{tecnico}/toggle', [TecnicoController::class, 'toggleActivo'])
+        ->name('tecnicos.toggle');
 });
 
 // Rutas del portal QR — GET muestra formulario, POST valida DNI

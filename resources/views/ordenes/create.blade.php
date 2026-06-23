@@ -189,11 +189,17 @@
         <div class="grid grid-cols-1 lg:grid-cols-3 gap-4">
             <div>
                 <label class="block text-sm font-medium text-gray-700 mb-1">Técnico asignado *</label>
-                <input type="text" name="tecnico_asignado"
-                       value="{{ old('tecnico_asignado') }}"
-                       placeholder="Nombre del técnico"
-                       class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full
-                              @error('tecnico_asignado') border-red-500 @enderror">
+                <select name="tecnico_asignado"
+                        class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full
+                            @error('tecnico_asignado') border-red-500 @enderror">
+                    <option value="">Seleccionar técnico...</option>
+                    @foreach(\App\Models\Tecnico::activos()->orderBy('nombre')->get() as $tecnico)
+                        <option value="{{ $tecnico->nombre }}"
+                                {{ old('tecnico_asignado') === $tecnico->nombre ? 'selected' : '' }}>
+                            {{ $tecnico->nombre }}
+                        </option>
+                    @endforeach
+                </select>
                 @error('tecnico_asignado')
                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                 @enderror

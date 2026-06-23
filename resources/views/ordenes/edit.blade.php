@@ -47,14 +47,19 @@
     <div class="bg-white rounded-xl shadow-sm p-6">
         <h3 class="font-semibold text-gray-800 mb-4 pb-2 border-b">🔧 Servicio</h3>
 
-        <div class="mb-4">
-            <label class="block text-sm font-medium text-gray-700 mb-1">
-                Técnico asignado *
-            </label>
-            <input type="text" name="tecnico_asignado"
-                   value="{{ old('tecnico_asignado', $orden->tecnico_asignado) }}"
-                   class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full
-                          @error('tecnico_asignado') border-red-500 @enderror">
+        <div>
+            <label class="block text-sm font-medium text-gray-700 mb-1">Técnico asignado *</label>
+            <select name="tecnico_asignado"
+                    class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full
+                        @error('tecnico_asignado') border-red-500 @enderror">
+                <option value="">Seleccionar técnico...</option>
+                @foreach(\App\Models\Tecnico::activos()->orderBy('nombre')->get() as $tecnico)
+                    <option value="{{ $tecnico->nombre }}"
+                            {{ old('tecnico_asignado') === $tecnico->nombre ? 'selected' : '' }}>
+                        {{ $tecnico->nombre }}
+                    </option>
+                @endforeach
+            </select>
             @error('tecnico_asignado')
                 <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
             @enderror
