@@ -162,27 +162,44 @@
         <h3 class="font-semibold text-gray-800 mb-4 pb-2 border-b">🔧 Datos del servicio</h3>
 
         <div class="grid grid-cols-1 lg:grid-cols-2 gap-4 mb-4">
-            <div>
+            <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                     Falla reportada por el cliente *
                 </label>
                 <textarea name="falla_cliente" rows="3"
-                          placeholder="El cliente dice que..."
-                          class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full
-                                 @error('falla_cliente') border-red-500 @enderror">{{ old('falla_cliente') }}</textarea>
+                        placeholder="El cliente dice que..."
+                        class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full
+                                @error('falla_cliente') border-red-500 @enderror">{{ old('falla_cliente') }}</textarea>
                 @error('falla_cliente')
                     <p class="text-red-500 text-xs mt-1">{{ $message }}</p>
                 @enderror
             </div>
 
-            <div>
+            <div class="mb-4">
                 <label class="block text-sm font-medium text-gray-700 mb-1">
                     Diagnóstico técnico
-                    <span class="text-gray-400 font-normal">(opcional, se puede completar después)</span>
+                    <span class="text-gray-400 font-normal">(selecciona o escribe)</span>
                 </label>
-                <textarea name="diagnostico_tecnico" rows="3"
-                          placeholder="Al revisar el equipo se encontró..."
-                          class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full">{{ old('diagnostico_tecnico') }}</textarea>
+                {{-- Selector de servicios predefinidos --}}
+                <select id="servicio-select"
+                        class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full mb-2"
+                        onchange="aplicarServicio(this)">
+                    <option value="">Seleccionar servicio común...</option>
+                    @foreach(\App\Models\Servicio::activos()->orderBy('categoria')->orderBy('nombre')->get()->groupBy('categoria') as $cat => $items)
+                        <optgroup label="{{ $cat ?: 'General' }}">
+                            @foreach($items as $servicio)
+                                <option value="{{ $servicio->nombre }}"
+                                        data-precio="{{ $servicio->precio_sugerido }}">
+                                    {{ $servicio->nombre }} — S/ {{ number_format($servicio->precio_sugerido, 2) }}
+                                </option>
+                            @endforeach
+                        </optgroup>
+                    @endforeach
+                </select>
+                {{-- Campo de texto para editar o escribir libremente --}}
+                <textarea name="diagnostico_tecnico" id="diagnostico_tecnico" rows="2"
+                        placeholder="Al revisar el equipo se encontró..."
+                        class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full">{{ old('diagnostico_tecnico') }}</textarea>
             </div>
         </div>
 
@@ -243,6 +260,23 @@
         Guardar orden
     </button>
 </div>
+
+<script>
+// Cuando se selecciona un servicio, autocompleta el diagnóstico y el precio
+function aplicarServicio(select) {
+    const opcion = select.options[select.selectedIndex];
+    if (!opcion.value) return;
+
+    // Ponemos el nombre del servicio en el diagnóstico
+    document.getElementById('diagnostico_tecnico').value = opcion.value;
+
+    // Autocompletamos la mano de obra con el precio sugerido
+    const precio = opcion.dataset.precio;
+    if (precio && precio > 0) {
+        document.querySelector('[name="mano_obra"]').value = precio;
+    }
+}
+</script>
 
 </form>
 

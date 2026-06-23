@@ -9,6 +9,8 @@ use App\Http\Controllers\DashboardController;
 use App\Http\Controllers\ConsultaController;
 use App\Http\Controllers\VentaController;
 use App\Http\Controllers\TecnicoController;
+use App\Http\Controllers\ServicioController;
+
 
 // Ruta raíz redirige al dashboard
 Route::get('/', fn() => redirect()->route('dashboard'));
@@ -60,6 +62,15 @@ Route::middleware(['auth'])->group(function () {
         ->parameters(['tecnicos' => 'tecnico']);
     Route::patch('/tecnicos/{tecnico}/toggle', [TecnicoController::class, 'toggleActivo'])
         ->name('tecnicos.toggle');
+
+    // Catálogo de servicios
+    Route::resource('servicios', ServicioController::class)
+        ->parameters(['servicios' => 'servicio']);
+    Route::patch('/servicios/{servicio}/toggle', [ServicioController::class, 'toggleActivo'])
+        ->name('servicios.toggle');
+    // Endpoint JSON para autocompletar en el formulario de orden
+    Route::get('/api/servicios', [ServicioController::class, 'listar'])
+        ->name('servicios.listar');
 });
 
 // Rutas del portal QR — GET muestra formulario, POST valida DNI

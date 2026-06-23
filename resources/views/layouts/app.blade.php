@@ -59,6 +59,12 @@
                 📦 <span>Inventario</span>
             </a>
 
+            <a href="{{ route('servicios.index') }}"
+            class="flex items-center gap-3 px-3 py-2 rounded-lg text-sm
+                    {{ request()->routeIs('servicios.*') ? 'bg-blue-600 text-white' : 'text-gray-300 hover:bg-gray-700' }}">
+                🔧 <span>Servicios</span>
+            </a>
+
         </nav>
 
         {{-- Usuario logueado en la parte inferior --}}
