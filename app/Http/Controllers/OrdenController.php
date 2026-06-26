@@ -5,7 +5,8 @@ namespace App\Http\Controllers;
 use App\Models\Orden;
 use App\Models\Cliente;
 use App\Models\EstadoLog;
-use App\Http\Requests\StoreOrdenRequest;
+use App\Models\Servicio;
+use App\Models\Repuesto;
 use App\Http\Requests\UpdateOrdenRequest;
 use Illuminate\Http\Request;
 
@@ -16,24 +17,19 @@ class OrdenController extends Controller
     {
         $query = Orden::with('cliente')->latest();
 
-        // Filtro por estado si se envía desde el formulario
         if ($request->filled('estado')) {
             $query->where('estado', $request->estado);
         }
 
-        // Búsqueda por número de orden o nombre de cliente
         if ($request->filled('buscar')) {
             $buscar = $request->buscar;
             $query->where('numero_orden', 'like', "%{$buscar}%")
-                ->orWhereHas(
-                    'cliente',
-                    fn($q) =>
+                ->orWhereHas('cliente', fn($q) =>
                     $q->where('nombre_completo', 'like', "%{$buscar}%")
                 );
         }
 
         $ordenes = $query->paginate(15);
-
         return view('ordenes.index', compact('ordenes'));
     }
 
@@ -46,7 +42,6 @@ class OrdenController extends Controller
     // Guarda la nueva orden en la base de datos
     public function store(Request $request)
     {
-        // Validamos manualmente sin FormRequest
         $request->validate([
             'nombre_completo'        => 'required|string|max:150',
             'dni'                    => 'required|string|size:8',
@@ -61,8 +56,9 @@ class OrdenController extends Controller
             'falla_cliente'          => 'required|string',
             'diagnostico_tecnico'    => 'nullable|string',
             'tecnico_asignado'       => 'required|string|max:100',
-            'mano_obra'           => 'required|numeric|min:0',
+            'mano_obra'              => 'required|numeric|min:0',
             'fecha_entrega_estimada' => 'nullable|date',
+            'descuento'          => 'nullable|numeric|min:0',
         ]);
 
         // Buscamos o creamos el cliente por su DNI
@@ -75,7 +71,7 @@ class OrdenController extends Controller
             ]
         );
 
-        // Creamos la orden con número y token QR generados automáticamente
+        // Creamos la orden
         $orden = Orden::create([
             'numero_orden'           => Orden::generarNumeroOrden(),
             'token_qr'               => Orden::generarTokenQr(),
@@ -89,9 +85,10 @@ class OrdenController extends Controller
             'accesorios'             => $request->accesorios,
             'falla_cliente'          => $request->falla_cliente,
             'diagnostico_tecnico'    => $request->diagnostico_tecnico,
-            'mano_obra'             => $request->mano_obra,
+            'mano_obra'              => $request->mano_obra,
             'precio_total'           => $request->mano_obra,
             'fecha_entrega_estimada' => $request->fecha_entrega_estimada,
+            'descuento'          => $request->descuento ?? 0,
             'estado'                 => 'recibido',
         ]);
 
@@ -102,6 +99,35 @@ class OrdenController extends Controller
             'estado_nuevo'    => 'recibido',
         ]);
 
+        // Si el diagnóstico tiene un servicio vinculado con repuesto,
+        // lo asociamos a la orden y descontamos el stock automáticamente
+        $servicio = Servicio::where('nombre', $request->diagnostico_tecnico)
+                            ->whereNotNull('repuesto_id')
+                            ->first();
+
+        if ($servicio && $servicio->repuesto) {
+            $repuesto = $servicio->repuesto;
+
+            if ($repuesto->stock_actual >= $servicio->cantidad_repuesto) {
+                // Asociamos el repuesto a la orden
+               /*  $orden->repuestos()->attach($repuesto->id, [
+                    'cantidad'        => $servicio->cantidad_repuesto,
+                    'precio_unitario' => $repuesto->precio_venta,
+                ]); */
+
+                // Descontamos del inventario
+                $repuesto->decrement('stock_actual', $servicio->cantidad_repuesto);
+
+                // Recalculamos el total incluyendo el repuesto
+               /*  $orden->recalcularTotal(); */
+            }
+        }
+
+        /* si hay un descuento aplicado, recalculamos el total de la orden */
+        if ($request->descuento > 0) {
+            $orden->recalcularTotal();
+        }
+
         return redirect()->route('ordenes.show', $orden)
             ->with('success', "Orden {$orden->numero_orden} creada correctamente.");
     }
@@ -109,9 +135,7 @@ class OrdenController extends Controller
     // Muestra el detalle completo de una orden
     public function show(Orden $orden)
     {
-        // Cargamos relaciones para evitar consultas N+1
         $orden->load('cliente', 'pagos', 'repuestos', 'estadoLogs');
-
         return view('ordenes.show', compact('orden'));
     }
 
@@ -126,8 +150,6 @@ class OrdenController extends Controller
     public function update(UpdateOrdenRequest $request, Orden $orden)
     {
         $orden->update($request->validated());
-
-        // Recalculamos el total por si cambió la mano de obra
         $orden->recalcularTotal();
 
         return redirect()->route('ordenes.show', $orden)
@@ -141,20 +163,16 @@ class OrdenController extends Controller
 
         // No se puede entregar si hay saldo pendiente
         if ($nuevoEstado === 'entregado' && $orden->saldo_pendiente > 0) {
-            return back()->with(
-                'error',
-                "No se puede entregar. Saldo pendiente: S/ {$orden->saldo_pendiente}"
-            );
+            return back()->with('error',
+                "No se puede entregar. Saldo pendiente: S/ {$orden->saldo_pendiente}");
         }
 
         $estadoAnterior = $orden->estado;
 
-        // Si pasa a "listo" guardamos la fecha exacta
         if ($nuevoEstado === 'listo') {
             $orden->fecha_listo = now();
         }
 
-        // Si pasa a "entregado" guardamos la fecha de entrega
         if ($nuevoEstado === 'entregado') {
             $orden->fecha_entregado = now();
         }
@@ -162,7 +180,6 @@ class OrdenController extends Controller
         $orden->estado = $nuevoEstado;
         $orden->save();
 
-        // Registramos el cambio en el historial
         EstadoLog::create([
             'orden_id'        => $orden->id,
             'estado_anterior' => $estadoAnterior,
@@ -172,7 +189,7 @@ class OrdenController extends Controller
         return back()->with('success', "Estado actualizado a: {$nuevoEstado}");
     }
 
-    // Asocia un repuesto del inventario a esta orden y descuenta stock
+    // Asocia un repuesto manualmente a la orden y descuenta stock
     public function agregarRepuesto(Request $request, Orden $orden)
     {
         $request->validate([
@@ -180,39 +197,29 @@ class OrdenController extends Controller
             'cantidad'    => 'required|integer|min:1',
         ]);
 
-        $repuesto = \App\Models\Repuesto::find($request->repuesto_id);
+        $repuesto = Repuesto::find($request->repuesto_id);
 
-        // Verificamos que haya stock suficiente
         if ($repuesto->stock_actual < $request->cantidad) {
-            return back()->with(
-                'error',
-                "Stock insuficiente de {$repuesto->nombre}. Disponible: {$repuesto->stock_actual}"
-            );
+            return back()->with('error',
+                "Stock insuficiente de {$repuesto->nombre}. Disponible: {$repuesto->stock_actual}");
         }
 
-        // Asociamos el repuesto a la orden con el precio actual
         $orden->repuestos()->attach($repuesto->id, [
             'cantidad'        => $request->cantidad,
             'precio_unitario' => $repuesto->precio_venta,
         ]);
 
-        // Descontamos del inventario
         $repuesto->decrement('stock_actual', $request->cantidad);
-
-        // Recalculamos el total de la orden
         $orden->recalcularTotal();
 
         return back()->with('success', "Repuesto agregado: {$repuesto->nombre}");
     }
 
     // Quita un repuesto de la orden y devuelve el stock
-    public function quitarRepuesto(Orden $orden, \App\Models\Repuesto $repuesto)
+    public function quitarRepuesto(Orden $orden, Repuesto $repuesto)
     {
-        // Recuperamos cuánto se había usado para devolver el stock
         $pivot = $orden->repuestos()->where('repuesto_id', $repuesto->id)->first()->pivot;
-
         $repuesto->increment('stock_actual', $pivot->cantidad);
-
         $orden->repuestos()->detach($repuesto->id);
         $orden->recalcularTotal();
 

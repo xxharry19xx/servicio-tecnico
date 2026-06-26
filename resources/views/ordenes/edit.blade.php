@@ -86,6 +86,18 @@
             @enderror
         </div>
 
+        {{-- Descuento --}}
+        <div class="mb-4">
+            <label class="block text-sm font-medium text-gray-700 mb-1">
+                Descuento (S/)
+                <span class="text-gray-400 font-normal">(opcional)</span>
+            </label>
+            <input type="number" name="descuento" step="0.01" min="0"
+                value="{{ old('descuento', $orden->descuento) }}"
+                placeholder="0.00"
+                class="border border-gray-300 rounded-lg px-3 py-2 text-sm w-full">
+        </div>
+
         <div class="mb-4">
             <label class="block text-sm font-medium text-gray-700 mb-1">
                 Fecha estimada de entrega

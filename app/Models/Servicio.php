@@ -13,6 +13,8 @@ class Servicio extends Model
         'categoria',
         'precio_sugerido',
         'activo',
+        'repuesto_id',
+        'cantidad_repuesto',
     ];
 
     protected $casts = [
@@ -24,5 +26,11 @@ class Servicio extends Model
     public function scopeActivos($query)
     {
         return $query->whereRaw('"activo" = true');
+    }
+
+    // Un servicio puede estar vinculado a un repuesto del inventario
+    public function repuesto()
+    {
+        return $this->belongsTo(Repuesto::class);
     }
 }

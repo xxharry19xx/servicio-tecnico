@@ -106,33 +106,43 @@
     <div class="space-y-6">
 
         {{-- Resumen financiero --}}
-        <div class="bg-white rounded-xl shadow-sm p-6">
-            <h3 class="font-semibold text-gray-800 mb-4">💰 Resumen de pago</h3>
-            <div class="space-y-2 text-sm">
-                <div class="flex justify-between">
-                    <span class="text-gray-500">Mano de obra</span>
-                    <span class="font-medium">S/ {{ number_format($orden->mano_obra, 2) }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500">Repuestos</span>
-                    <span class="font-medium">S/ {{ number_format($orden->costo_repuestos, 2) }}</span>
-                </div>
-                <div class="flex justify-between border-t pt-2">
-                    <span class="text-gray-700 font-medium">Total del servicio</span>
-                    <span class="font-semibold">S/ {{ number_format($orden->precio_total, 2) }}</span>
-                </div>
-                <div class="flex justify-between">
-                    <span class="text-gray-500">Total pagado</span>
-                    <span class="font-medium text-green-600">
-                        S/ {{ number_format($orden->total_pagado, 2) }}
-                    </span>
-                </div>
-                <div class="flex justify-between border-t pt-2 font-semibold">
-                    <span>Saldo pendiente</span>
-                    <span class="{{ $orden->saldo_pendiente > 0 ? 'text-red-500' : 'text-green-600' }}">
-                        S/ {{ number_format($orden->saldo_pendiente, 2) }}
-                    </span>
-                </div>
+        <div class="space-y-2 text-sm">
+            <div class="flex justify-between">
+                <span class="text-gray-500">Mano de obra</span>
+                <span class="font-medium">S/ {{ number_format($orden->mano_obra, 2) }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Repuestos</span>
+                <span class="font-medium">S/ {{ number_format($orden->costo_repuestos, 2) }}</span>
+            </div>
+            @if($orden->descuento > 0)
+            <div class="flex justify-between">
+                <span class="text-gray-500">
+                    Descuento
+                    @if($orden->motivo_descuento)
+                        <span class="text-xs">({{ $orden->motivo_descuento }})</span>
+                    @endif
+                </span>
+                <span class="font-medium text-red-500">
+                    - S/ {{ number_format($orden->descuento, 2) }}
+                </span>
+            </div>
+            @endif
+            <div class="flex justify-between border-t pt-2">
+                <span class="text-gray-700 font-medium">Total del servicio</span>
+                <span class="font-semibold">S/ {{ number_format($orden->precio_total, 2) }}</span>
+            </div>
+            <div class="flex justify-between">
+                <span class="text-gray-500">Total pagado</span>
+                <span class="font-medium text-green-600">
+                    S/ {{ number_format($orden->total_pagado, 2) }}
+                </span>
+            </div>
+            <div class="flex justify-between border-t pt-2 font-semibold">
+                <span>Saldo pendiente</span>
+                <span class="{{ $orden->saldo_pendiente > 0 ? 'text-red-500' : 'text-green-600' }}">
+                    S/ {{ number_format($orden->saldo_pendiente, 2) }}
+                </span>
             </div>
         </div>
 

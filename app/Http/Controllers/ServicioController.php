@@ -20,6 +20,8 @@ class ServicioController extends Controller
             'nombre'          => 'required|string|max:150',
             'categoria'       => 'nullable|string|max:50',
             'precio_sugerido' => 'required|numeric|min:0',
+            'repuesto_id'       => 'nullable|exists:repuestos,id',
+            'cantidad_repuesto' => 'required|integer|min:1',
         ]);
 
         Servicio::create($request->all());
@@ -32,6 +34,8 @@ class ServicioController extends Controller
             'nombre'          => 'required|string|max:150',
             'categoria'       => 'nullable|string|max:50',
             'precio_sugerido' => 'required|numeric|min:0',
+            'repuesto_id'       => 'nullable|exists:repuestos,id',
+            'cantidad_repuesto' => 'required|integer|min:1',
         ]);
 
         $servicio->update($request->all());
@@ -53,7 +57,11 @@ class ServicioController extends Controller
     // Devuelve los servicios en JSON para el autocompletado del formulario de orden
     public function listar()
     {
-        $servicios = Servicio::activos()->orderBy('categoria')->orderBy('nombre')->get();
+        $servicios = Servicio::activos()
+        ->with('repuesto')
+        ->orderBy('categoria')
+        ->orderBy('nombre')
+        ->get();
         return response()->json($servicios);
     }
 

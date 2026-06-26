@@ -23,6 +23,7 @@ class Orden extends Model
         'diagnostico_tecnico',
         'precio_total',
         'mano_obra',
+        'descuento',
         'fecha_entrega_estimada',
         'estado',
         'fecha_listo',
@@ -114,7 +115,7 @@ class Orden extends Model
     // Recalcula y guarda el precio_total = mano_obra + repuestos
     public function recalcularTotal(): void
     {
-        $this->precio_total = $this->mano_obra + $this->costo_repuestos;
+        $this->precio_total = max(0, $this->mano_obra + $this->costo_repuestos - $this->descuento);
         $this->save();
     }
 }
